@@ -1,0 +1,162 @@
+#! /bin/bash
+
+# Declare Our Variables - Adjust here
+SERVERIP=192.168.1.10
+LOGFILE=/var/log/backuplog
+RESTORELOG=/tmp/restorelog
+
+### Help and Usage prompt
+if [ "$1" == "-?" ] || [ "$1" == "--help" ] || [ "$1" == "" ]
+then
+echo
+echo "Basic backup and restore script.  Takes a snapshot of the homedir, /etc, /root, and package lists for restoration, or restores selected options."
+echo
+echo "Run with the --backup argument to backup to server."
+echo "Run with the --restore <old system name> argument to restore from server."
+echo "Run with -? or --help to see this message."
+echo
+exit 1
+
+### Restore Function
+elif [ "$1" == "--restore" ]
+
+then
+
+# Check for client name
+if [ "$2" == "" ]
+then
+	echo
+	echo -e "Please provide client name in the following format:"
+	echo
+	echo -e "      ./backup --restore <Client name>"
+	echo
+	echo -e "This is case sensitive, and may have unexpected results if provided with an invalid name."
+	echo
+else
+
+# Copy all output to logfile as well as stdout
+exec > >(tee -a $RESTORELOG)
+exec 2>&1
+
+echo -e "\x1b[33;1m--------------------------------------------------------------------------------\x1b[0m" 
+
+###  Check if server for backup dump is up
+ping -c 1 $SERVERIP > /dev/null
+
+### Check errorlevel
+if [ $? -eq 0 ]
+
+###  If not error level 0, rsync data from backup locations
+then
+
+# Mark start time
+	echo -e "\x1b[32;1mRestore begining at $(date -Iseconds)\x1b[0m"
+
+#Stop the x server to ensure restore
+	service lightdm stop
+
+# Restore root home, and thus SSH keys to prevent further passwords
+        rsync -vazh  root@$SERVERIP:/backups/$2/home/root/ /root/
+
+# Restore packages
+	mkdir -p /tmp/aptrecovery
+        rsync -vvazh  root@$SERVERIP:/backups/$2/system/aptback/ /tmp/aptrecovery/
+	rsync -vvazh  root@$SERVERIP:/backups/$2/system/etc/apt/sources.list* /etc/apt/
+	apt-key add /tmp/aptrecovery/Repo.keys
+	apt-get -y update
+	apt-get -y install dselect
+	dselect update
+	dpkg --clear-selections
+	dpkg --set-selections < /tmp/aptrecovery/packages.list
+	dselect update
+	apt-get dselect-upgrade -y
+	apt-get -y upgrade
+
+# Restore cron jobs
+	rsync -vvazh  root@$SERVERIP:/backups/$2/system/crontabs/ /var/spool/
+
+
+# Restore system settings  ****  WIP ****
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/lightdm /etc/
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/bluetooth /etc/
+
+# Make sure logrotate config has its directories
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/logrotate* /etc/
+	mkdir /var/log/oldlogs
+
+# More settings
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/host* /etc/
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/kde4* /etc/
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/NetworkManager /etc/
+	rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/X11 /etc/
+        rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/passwd /etc/
+        rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/group /etc/
+        rsync -vvazh root@$SERVERIP:/backups/$2/system/etc/shadow /etc/
+
+
+# Restore KVM stuff
+#	rsync -vvazh root@$SERVERIP:/backups/$2/system/kvm/libvirt /var/lib/
+
+#Restore user homedirs
+	rsync -vvazh  root@$SERVERIP:/backups/$2/home/ /home/
+	
+#reboot to finalize
+	echo -e "\x1b[32;1mRestore of $2 Completed at $(date -Iseconds).  Rebooting."
+	reboot now
+	exit 0
+
+
+###  If errorlevel 0, log failure
+else
+	echo -e "\x1b[31;1mRestore of $2 failed due to unavailable backup location at $SERVERIP on $(date -Iseconds)\x1b[0m" 
+	exit 1
+fi
+fi
+
+### Backup function
+elif [ "$1" == "--backup" ]
+then
+
+	echo -e "\x1b[33;1m--------------------------------------------------------------------------------\x1b[0m" >> $LOGFILE
+
+###  Check if server for backup dump is up
+ping -c 1 $SERVERIP > /dev/null
+
+### Check errorlevel
+if [ $? -eq 0 ]
+
+###  If not error level 0, rsync data to backup locations
+then
+	echo -e "\x1b[32;1mBackup initiated of $(hostname) on $(date -Iseconds)\x1b[0m" >> $LOGFILE
+
+# Prepare target, if they do not exist on target
+	ssh root@$SERVERIP mkdir -p /backups/$(hostname)/home/ /backups/$(hostname)/system/
+
+# Backup home directories
+	rsync -vazh --log-file=$LOGFILE --delete --exclude '.cache' --exclude '.steam' /home/ root@$SERVERIP:/backups/$(hostname)/home/
+	rsync -vazh --log-file=$LOGFILE --delete /root root@$SERVERIP:/backups/$(hostname)/home/ 
+
+# Backup apt packages
+	mkdir -p /tmp/aptback
+	dpkg --get-selections > /tmp/aptback/packages.list
+	apt-key exportall > /tmp/aptback/Repo.keys
+	rsync -vazh --log-file=$LOGFILE --delete /tmp/aptback root@$SERVERIP:/backups/$(hostname)/system/
+
+# Backup Settings Directories
+	rsync -vazh --log-file=$LOGFILE --delete /etc/ root@$SERVERIP:/backups/$(hostname)/system/etc/
+	rsync -vazh --log-file=$LOGFILE --delete /var/spool/cron root@$SERVERIP:/backups/$(hostname)/system/crontabs/
+
+# Backup KVM info
+#	rsync -vazh --log-file=$LOGFILE --delete /var/lib/libvirt root@$SERVERIP:/backups/$(hostname)/system/kvm/
+
+# End backup
+	echo -e "\x1b[32;1mBackup of $(hostname) completed on $(date -Iseconds)\x1b[0m" >> $LOGFILE
+	exit 0
+
+###  If errorlevel 0, log failure
+else
+#	date >> $LOGFILE
+	echo -e "\x1b[31;1mBackup of $(hostname) failed due to unavailable backup location at $SERVERIP on $(date -Iseconds)\x1b[0m" >> $LOGFILE
+	exit 1
+fi
+fi
