@@ -132,6 +132,10 @@ then
 # Prepare target, if they do not exist on target
 	ssh root@$SERVERIP mkdir -p /backups/$(hostname)/home/ /backups/$(hostname)/system/
 
+# Store Linux version
+	cat /proc/version |awk -F '[()]' '{print $5}'|sed 's/[0-9].*//g' > /tmp/version
+	rsync -vazh --log-file=$LOGFILE --delete /tmp/version root@$SERVERIP:/backups/$(hostname)/
+
 # Backup home directories
 	rsync -vazh --log-file=$LOGFILE --delete --exclude '.cache' --exclude '.steam' /home/ root@$SERVERIP:/backups/$(hostname)/home/
 	rsync -vazh --log-file=$LOGFILE --delete /root root@$SERVERIP:/backups/$(hostname)/home/ 
