@@ -1,0 +1,133 @@
+#! /bin/bash
+
+### Variable Declaration
+VMHOST=192.168.100.1
+VMBACKUPS=/virt/backup
+VMACTIVE=/virt/active
+
+###  Function declaration
+BACKUPEXISTS=$(basename $(ssh -q $VMHOST ls -1 $VMBACKUPS/$2*) 2>/dev/null | awk -F. '{print $1}' )
+ACTIVEEXISTS=$(basename $(ssh -q $VMHOST ls -1 $VMACTIVE/$2*) 2>/dev/null )
+ISRUNNING=$(ssh -q $VMHOST 'virsh -c qemu:///system list' | grep $2 2>/dev/null | wc -l)
+
+### Pre-run checks
+# Running as root?
+if [ "$(whoami)" != "root" ]
+then
+echo "Please run this with sudo permissions."
+exit 1 
+fi
+
+# Trying to modify master VM
+if [ "$2" == "master" ]
+then
+echo "This tool cannot be used to manage master VM.  Aborting."
+exit 1
+fi
+
+### Help Section - Keep updated with script changes
+if [ "$1" == "-?" ] || [ "$1" == "--help" ] || [ "$1" == "" ]
+then
+echo
+echo "Script for resetting VMs to working status."
+echo
+echo "This script requires that you run it as root, if errors are encountered please check root SSH keys."
+echo "Run with the --list argument for a list of available servers to restore."
+echo "Run with --restore <VM Name> to reset the listed server."
+echo "To stop a VM use --stop <VM Name>, to start use --start <VM Name>."
+echo "To force an unresponsive VM to turn off, use the --forceoff argument."
+echo "Run with --help or -? for this help message."
+echo
+exit 1
+fi
+
+### get listing of available VM images to restore
+if [ "$1" == "--list" ]
+then
+echo "------------------------"
+echo "***List of active VMs***"
+echo "------------------------"
+ssh -q $VMHOST virsh -c qemu:///system list
+echo "---------------------------"
+echo "***List of active images***"
+echo "---------------------------"
+ssh -q $VMHOST ls -1 $VMACTIVE | awk -F. '{ print $1 }'
+echo "----------------------------------"
+echo "***List of VM images to restore***"
+echo "----------------------------------"
+ssh -q $VMHOST ls -1 $VMBACKUPS | awk -F. '{ print $1 }'
+exit 0
+fi
+
+### Handle VM Restore requests
+
+# Process stuff
+if [ "$1" == "--restore" -a "$2" == "" ] 
+then
+echo "Please provide a valid VM Name as an argument to the --restore command."
+exit 1
+elif [ "$1" == "--restore" -a "$2" != "$BACKUPEXISTS" ]
+then
+echo "There is no backed up image for $2."
+exit 1
+elif [ "$1" == "--restore" -a "$2" == "$BACKUPEXISTS" ]
+then
+ssh -q $VMHOST virsh -c qemu:///system destroy $2
+sleep 5
+ssh -q $VMHOST cp -v --preserve=all $VMBACKUPS/$2.* $VMACTIVE/
+sleep 5
+ssh -q $VMHOST virsh -c qemu:///system start $2
+#echo "Updating home directories.  Please wait..."
+#sleep 30
+#until [[ $(ping -c 1 $2 > /dev/null) -eq 1 ]]
+#do
+#echo "Waiting for $2 to come back up..."
+#sleep 5
+#done
+#rsync -az /home/* $2:/home/
+#echo "Directories updated."
+exit 0
+#else
+#echo "Waiting for $2 to come back up..."
+#sleep 5
+fi
+
+###  Start and Stop VMs
+
+# Stop VM
+if [ "$1" == "--stop" -a "$2" == "" ] || [ "$1" == "--start" -a "$2" == "" ] || [ "$1" == "--forceoff" -a "$2" == "" ]
+then
+echo "Please provide a VM Name."
+exit 1
+elif [ "$1" == "--stop" -a "$ISRUNNING" != "1" ]
+then
+echo "$2 is not listed as running."
+exit 1
+elif [ "$1" == "--stop" -a "$ISRUNNING" == "1" ]
+then
+ssh -q $VMHOST virsh -c qemu:///system shutdown $2
+echo "Successfully stopped $2"
+exit 0
+
+#Stop VM 
+elif [ "$1" == "--start" -a "$2" != "$ACTIVEEXISTS" -a "$ISRUNNING" == "1" ]
+then
+echo "$2 is not listed as available for starting."
+exit 1
+elif [ "$1" == "--start" -a "$ISRUNNING" != "1" ]
+then
+ssh -q $VMHOST virsh -c qemu:///system start $2
+echo "Successfully started $2"
+exit 0
+
+#Force VM off
+elif [ "$1" == "--forceoff" -a "$ISRUNNING" == "1" -a "$3" != "yes" ]
+then
+echo "Please the following format: sudo vmmanage --forceoff <VM NAME> yes."
+exit 1
+elif [ "$1" == "--forceoff" -a "$ISRUNNING" == "1" -a "$3" == "yes" ]
+then
+ssh -q $VMHOME virsh -c qemu:///system destroy $2
+exit 0
+fi
+

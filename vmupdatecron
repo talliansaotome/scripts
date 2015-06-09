@@ -1,0 +1,15 @@
+#!/bin/bash
+
+### Fetch vm list from host
+rsync -avz 192.168.100.1:/virt/vmlist /tmp/vmlist
+
+###read through list and update hosts files and username password files on each guest
+while read GUEST
+do
+rsync -avvz /etc/hosts $GUEST:/etc/
+rsync -avvz /etc/passwd $GUEST:/etc/
+rsync -avvz /etc/group $GUEST:/etc/
+rsync -avvz /etc/shadow $GUEST:/etc/
+rsync -avvz /root/vmsettings/sudoers $GUEST:/etc/
+rsync -avvz --delete /home/* $GUEST:/home/
+done </tmp/vmlist
