@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SERVER=192.168.1.10
-SERVERLOM=192.168.7.100
-USER=tallian
+#SERVER=192.168.1.10
+#SERVERLOM=192.168.7.100
+#USER=tallian
 
 if [ "$1" = "" ]; then
 echo "Provide on/off argument, --help for options."
@@ -16,12 +16,40 @@ while true
 do
 	case "$1" in
 		-s|--server)
-			SERVER=$2
-			shift 2 
+			case "$2" in
+			"")
+				SERVER=192.168.1.10
+				shift 2
+				;; 
+			*)
+				SERVER=$2
+				shift 2
+				;;
+			esac
 			;;
 		-l|--serverlom)
-			SERVERLOM=$2
-			shift 2
+			case "$2" in
+			"")
+				SERVERLOM=192.168.7.100
+				shift 2
+				;;
+			*)
+				SERVERLOM=$2
+				shift 2
+				;;
+			esac
+			;;
+		-u|--user)
+			case "$2" in
+			"")
+				USER=tallian
+				shift 2
+				;;
+			*)
+				USER=$2
+				shift 2
+				;;
+			esac
 			;;
 		-h|--help)
 			echo "Utility to configure server power using ipmitool and ssh to issue remote commands, give on or off arguments."
@@ -36,11 +64,15 @@ do
 			echo "  Script will prompt for password as needed."
 			exit 0
 			;;
+		--) shift ; break ;;
 	esac
 done
 
-read -sp 'Remote password: ' PASSWORD
+echo $SERVER
+echo $USER
+echo $SERVERLOM
 
+read -sp 'Remote password: ' PASSWORD
 
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
