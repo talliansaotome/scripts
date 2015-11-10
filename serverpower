@@ -9,7 +9,7 @@ echo "Provide on/off argument, --help for options."
 exit 0
 fi
 
-TEMP=`getopt -o s:l:u:h --long server:,serverlom:,user:,help -n serverpower -- "$@"`
+TEMP=`getopts -o s:l:u:h --long server:,serverlom:,user:,help -n serverpower -- "$@"`
 eval set -- "$TEMP"
 
 while true
