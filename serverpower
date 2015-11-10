@@ -1,0 +1,55 @@
+#!/bin/bash
+
+SERVER=192.168.1.10
+SERVERLOM=192.168.7.100
+USER=tallian
+
+if [ "$1" = "" ]; then
+echo "Provide on/off argument, --help for options."
+exit 0
+fi
+
+TEMP=`getopt -o s:l:u:h --long server:,serverlom:,user:,help -n serverpower -- "$@"`
+eval set -- "$TEMP"
+
+while true
+do
+	case "$1" in
+		-s|--server)
+			SERVER=$2
+			shift 2 
+			;;
+		-l|--serverlom)
+			SERVERLOM=$2
+			shift 2
+			;;
+		-h|--help)
+			echo "Utility to configure server power using ipmitool and ssh to issue remote commands, give on or off arguments."
+			echo "The following command line switches will override the defaults:"
+			echo
+			echo "   -s or --server will change the default server name or IP"
+			echo
+			echo "   -l or --serverlom will change the default lom name or IP"
+			echo
+			echo "   -u or --user will change the default username"
+			echo
+			echo "  Script will prompt for password as needed."
+			exit 0
+			;;
+	esac
+done
+
+read -sp 'Remote password: ' PASSWORD
+
+
+if [ "$1" = "on" ] ; then
+ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
+elif [ "$1" = "off" ]; then
+ping -c 1 $SERVER > /dev/null
+if [ $? -eq 0 ]
+then
+ssh -t $USER@$SERVER sudo poweroff
+else
+echo "$SERVER is not currently up and responsive."
+fi
+fi
