@@ -76,9 +76,11 @@ read -sp 'Remote password: ' PASSWORD
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
 elif [ "$1" = "off" ]; then
+echo "Checking to see if $SERVER is up..."
 ping -c 1 $SERVER > /dev/null
 if [ $? -eq 0 ]
 then
+echo "Powering off server..."
 expect -c "
 spawn ssh -t $USER@$SERVER sudo poweroff
 expect password: { send $PASSWORD\r }
@@ -86,6 +88,7 @@ expect password { send $PASSWORD\r }
 sleep 1
 exit
 "
+echo "Server shutting down."
 else
 echo "$SERVER is not currently up and responsive."
 fi
