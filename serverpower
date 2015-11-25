@@ -14,7 +14,7 @@ do
 		-s|--server)
 			case "$2" in
 			"")
-				SERVER=192.168.1.10
+				SERVER=makhost
 				shift 2
 				;; 
 			*)
@@ -26,7 +26,7 @@ do
 		-l|--serverlom)
 			case "$2" in
 			*)
-				SERVERLOM=$2
+				SERVERLOM=makhost-sp
 				shift 2
 				;;
 			"")
