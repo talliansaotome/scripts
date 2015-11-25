@@ -72,7 +72,7 @@ echo $USER
 echo $SERVERLOM
 
 read -sp 'Remote password: ' PASSWORD
-echo "\n"
+echo ""
 
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
@@ -89,6 +89,7 @@ expect password { send $PASSWORD\r }
 sleep 1
 exit
 "
+echo ""
 echo "Server shutting down."
 else
 echo "$SERVER is not currently up and responsive."
