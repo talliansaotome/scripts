@@ -1,55 +1,56 @@
 #!/bin/bash
 
+## Base handling for no arguments
 if [ "$1" = "" ]; then
 echo "Provide on/off argument, --help for options."
 exit 0
 fi
 
+## Default declarations
 SERVER=makhost
 SERVERLOM=makhost-sp
+USER=tallian
 
+## Define getopt handling
 TEMP=`getopt -o s:l:u:h --long server:,serverlom:,user:,help -n serverpower -- "$@"`
 eval set -- "$TEMP"
 
+## getopt cases - only defining variables
 while true
 do
 	case "$1" in
+
+## Change server here for poweroff
 		-s|--server)
 			case "$2" in
-			"")
-				SERVER=makhost
-				shift 2
-				;; 
 			*)
 				SERVER=$2
 				shift 2
 				;;
 			esac
 			;;
+			
+## Change LOM address here for poweron
 		-l|--serverlom)
 			case "$2" in
 			*)
 				SERVERLOM=$2
 				shift 2
 				;;
-			"")
-				SERVERLOM=192.168.7.100
-				shift 2
-				;;
 			esac
 			;;
+			
+## Change user for logging in here
 		-u|--user)
 			case "$2" in
-			"")
-				USER=tallian
-				shift 2
-				;;
 			*)
 				USER=$2
 				shift 2
 				;;
 			esac
 			;;
+			
+##  Help text, could you tell?
 		-h|--help)
 			echo "Utility to configure server power using ipmitool and ssh to issue remote commands, give on or off arguments."
 			echo "The following command line switches will override the defaults:"
@@ -63,24 +64,30 @@ do
 			echo "  Script will prompt for password as needed."
 			exit 0
 			;;
+			
+## Define blank as no more opts
 		--) shift ; break ;;
 	esac
 done
 
-echo $SERVER
-echo $USER
-echo $SERVERLOM
-
+##  Fetch password for operations
 read -sp 'Remote password: ' PASSWORD
 echo ""
 
+##  Turn on system with ipmitool
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
+
+## Turn off system with ssh command begin handling
 elif [ "$1" = "off" ]; then
+
+## Ping to check if its even up
 echo "Checking to see if $SERVER is up..."
 ping -c 1 $SERVER > /dev/null
 if [ $? -eq 0 ]
 then
+
+## Expect statement for handling logins to power off
 echo "Powering off server..."
 expect -c "
 spawn ssh -t $USER@$SERVER sudo poweroff
