@@ -76,7 +76,13 @@ elif [ "$1" = "off" ]; then
 ping -c 1 $SERVER > /dev/null
 if [ $? -eq 0 ]
 then
-ssh -t $USER@$SERVER sudo poweroff
+expect -c "
+spawn ssh -t $USER@$SERVER sudo poweroff
+expect password { send $PASSWORD }
+expect password { send $PASSWORD }
+sleep 1
+exit
+"
 else
 echo "$SERVER is not currently up and responsive."
 fi
