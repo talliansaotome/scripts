@@ -72,6 +72,7 @@ echo $USER
 echo $SERVERLOM
 
 read -sp 'Remote password: ' PASSWORD
+echo "\n"
 
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
