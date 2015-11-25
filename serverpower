@@ -25,12 +25,12 @@ do
 			;;
 		-l|--serverlom)
 			case "$2" in
-			"")
-				SERVERLOM=192.168.7.100
-				shift 2
-				;;
 			*)
 				SERVERLOM=$2
+				shift 2
+				;;
+			"")
+				SERVERLOM=192.168.7.100
 				shift 2
 				;;
 			esac
