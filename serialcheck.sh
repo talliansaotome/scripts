@@ -1,6 +1,6 @@
 #!/bin/bash
 
-read -sp 'Username: ' USER
+read -p 'Username: ' USER
 read -sp 'Password: ' PASSWORD
 
 while read HOST;do
