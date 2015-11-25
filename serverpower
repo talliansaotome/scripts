@@ -5,6 +5,9 @@ echo "Provide on/off argument, --help for options."
 exit 0
 fi
 
+SERVER=makhost
+SERVERLOM=makhost-sp
+
 TEMP=`getopt -o s:l:u:h --long server:,serverlom:,user:,help -n serverpower -- "$@"`
 eval set -- "$TEMP"
 
@@ -26,7 +29,7 @@ do
 		-l|--serverlom)
 			case "$2" in
 			*)
-				SERVERLOM=makhost-sp
+				SERVERLOM=$2
 				shift 2
 				;;
 			"")
