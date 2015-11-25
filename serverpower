@@ -78,8 +78,8 @@ if [ $? -eq 0 ]
 then
 expect -c "
 spawn ssh -t $USER@$SERVER sudo poweroff
-expect password { send $PASSWORD }
-expect password { send $PASSWORD }
+expect password: { send $PASSWORD\r }
+expect password { send $PASSWORD\r }
 sleep 1
 exit
 "
