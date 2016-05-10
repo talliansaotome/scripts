@@ -77,6 +77,10 @@ echo ""
 ##  Turn on system with ipmitool
 if [ "$1" = "on" ] ; then
 ipmitool -U $USER -P $PASSWORD -H $SERVERLOM power $1
+UNREACHEABLE=1;
+while [ $UNREACHEABLE -ne "0" ]; 
+   do ping -q -c 1 $SERVER &> /dev/null; UNREACHEABLE=$?; sleep 1;echo $server is up;
+done
 
 ## Turn off system with ssh command begin handling
 elif [ "$1" = "off" ]; then
