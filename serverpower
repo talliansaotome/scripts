@@ -53,6 +53,7 @@ do
 ##  Help text, could you tell?
 		-h|--help)
 			echo "Utility to configure server power using ipmitool and ssh to issue remote commands, give on or off arguments."
+			echo "It is not recommended to change server lom ip without changing server ip for power on, this will cause a hang."
 			echo "The following command line switches will override the defaults:"
 			echo
 			echo "   -s or --server will change the default server name or IP"
