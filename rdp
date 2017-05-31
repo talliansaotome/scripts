@@ -1,0 +1,86 @@
+#!/bin/bash
+
+## Clear Variables
+USER=""
+PASSWORD=""
+SERVERNAME=""
+
+## Create Helpfile
+display_help() {
+    echo "Usage: rdp [option...] <servername>" >&2
+    echo
+    echo "   -u, --user					Set the username to log in with."
+    echo "   -p, --password				Set the password."
+    echo
+    exit 1
+}
+
+## Define getopt handling
+TEMP=`getopt -o u:p:h --long user:,password:,help -n servername -- "$@"`
+eval set -- "$TEMP"
+
+## getopt cases - only defining variables
+while true
+do
+	case "$1" in
+
+## Change user for logging in here
+		-u|--user)
+			case "$2" in
+			*)
+				USER=$2
+				shift 2
+				;;
+			esac
+			;;
+
+## Set Password
+		-p|--password)
+			case "$2" in
+			*)
+				PASSWORD=$2
+				shift 2
+				;;
+			esac
+			;;
+			
+##  Help text, could you tell?
+		-h|--help)
+			display_help
+			exit 0
+			;;
+			
+## Define blank as no more opts
+		--) shift ; break ;;
+	esac
+done
+
+## Gather login info if not passed on CLI
+if [ "$USER" = "" ] ; then
+read -p 'Username: ' USER
+fi
+
+if [ "$PASSWORD" = "" ] ; then
+read -sp 'Password: ' PASSWORD
+fi
+
+## Set server name to connect to.
+SERVER=$1
+
+### FAIL CONDITIONS
+if [ "$SERVER" = "" ] ; then
+echo "Servername must be passed on the command line."
+exit 1
+elif [ "$PASSWORD" = "" ] ; then
+echo "Password must be provided."
+exit 1
+elif [ "$USER" = "" ] ; then
+echo "Username must be provided."
+exit 1
+fi
+
+
+## Connect
+rdesktop -z -g 1450x850 -u $USER -p $PASSWORD $SERVER
+exit 0
+
