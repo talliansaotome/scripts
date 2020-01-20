@@ -26,11 +26,14 @@ if [ -x /usr/bin/fortune ] ; then
     /usr/bin/fortune
     echo
 fi
-if test -t 0 ; then
-	date=$(date +"%m_%d_%Y")
-	time=$(date +"%Y/%m/%d-%T %Z epoc: %s")
-	echo -e "\n\n======>> Session started at $time <<======\n\n" >> ~/logs/output.$date.log
-	script -f -a ~/logs/output.$date.log
-	echo ""
-	exit
+
+if [ -x ~/logs/ ] ; then
+	if test -t 0 ; then
+		date=$(date +"%m_%d_%Y")
+		time=$(date +"%Y/%m/%d-%T %Z epoc: %s")
+		echo -e "\n\n======>> Session started at $time <<======\n\n" >> ~/logs/output.$date.log
+		script -f -a ~/logs/output.$date.log
+		echo ""
+		exit
+	fi
 fi

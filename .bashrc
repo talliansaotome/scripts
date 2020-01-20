@@ -27,10 +27,13 @@
 
 test -s ~/.alias && . ~/.alias || true
 
+# Neat pretty prompt
 PS1="[ \[$(tput bold)\]\[$(tput sgr0)\]\[\033[38;5;1m\]\H\[$(tput sgr0)\]\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]\[\033[38;5;10m\]\t\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]\[\033[38;5;33m\]\u\[$(tput sgr0)\]\[\033[38;5;15m\] \w ] \[$(tput sgr0)\]"
 
-if [ -x ~/logs/ ] ; then
+# Archive logs if they exist, logging code is in .bashrc
+if [ -x ~/logarchive/ ] ; then
+    if [ -x ~/logs/ ] ; then
         find ~/logs/ -mtime +2 -print -exec gzip -qv {} \;
 	find ~/logs/ -type f -name "*.gz" -exec mv -v -t ~/logarchive/ {} +
+    fi
 fi
-
