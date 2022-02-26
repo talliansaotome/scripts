@@ -5,7 +5,7 @@
 ###Put ourselves in a screen session
 if [[ $STY = "" ]]; then
 	echo "Running ourself in a screen session."
-	screen -S $(basename $0) -L "$0"
+	screen -S $(basename $0) -L "$0 $*"
 	mv screenlog.? $(basename $0).log
 	exit
 fi
@@ -21,7 +21,7 @@ if [[ -f data/confluence.cfg.xml ]] ; then
 	echo "We are working with Confluence."
 	FILEOWNER=$(stat -c '%U' data/confluence.cfg.xml)
 	echo "Files are owned by $FILEOWNER"
-	SHAREDOPTS=--exclude={attachments,bundled-*,plugins-*,logs,temp,backups,clear-cache,cacheclear,import,export,backup,recovery,webresource-temp}
+	SHAREDOPTS=$( echo --exclude={attachments,bundled-*,plugins-*,logs,temp,backups,clear-cache,cacheclear,import,export,backup,recovery,webresource-temp} )
 elif [[ -f data/dbconfig.xml ]] ; then
 	APP=jira
 	CONFIGFILE=data/dbconfig.xml
@@ -29,13 +29,13 @@ elif [[ -f data/dbconfig.xml ]] ; then
 	echo "We are working with Jira."
 	FILEOWNER=$(stat -c '%U' data/dbconfig.xml)
 	echo "Files are owned by $FILEOWNER"
-	SHAREDOPTS=--exclude={data/attachments,analytics-logs,backup,caches,*.bak,tmp,temp,export,import,log,logs,plugins/.??*,CACHECLEAR*,cache-clear*,cacheclear*}
+	SHAREDOPTS=$(echo --exclude={data/attachments,analytics-logs,backup,caches,*.bak,tmp,temp,export,import,log,logs,plugins/.??*,CACHECLEAR*,cache-clear*,cacheclear*})
 else
 	echo "No app install detected."
 	exit 1
 fi
 
-# Get database info needed
+## Get database info needed
 DATABASECONNECTION=$(awk -F '[<>]' '/url/{print $3}' $CONFIGFILE)
 DATABASE=$(awk -F/ '{print $4}' <<< "$DATABASECONNECTION")
 echo "Using $DATABASE"
@@ -55,9 +55,54 @@ else
 	echo ""
 fi
 
-# Get other info we will need.
-read -p "Ticket Number? " TICKET
-read -p "Target Version? " VERSION
+## Get other info we will need.
+
+# Define getopt handling
+TEMP=$(getopt -o t:v:h --long ticket:,version:,help -n $(basename "$0") -- "$@")
+eval set -- "$TEMP"
+
+## getopt cases - only defining variables
+while true
+do
+	case "$1" in
+
+# define ticket number from cli
+		-t|--ticket)
+			case "$2" in
+			*)
+				TICKET=$2
+				shift 2
+				;;
+			esac
+			;;
+			
+# define version number from the cli
+		-v|--version)
+			case "$2" in
+			*)
+				VERSION=$2
+				shift 2
+				;;
+			esac
+			;;
+##  Help text, could you tell?
+		-h|--help)
+			echo "Placeholder, will write actual help text later. just run the damn thing."
+			;;
+			
+## Define blank as no more opts
+		--) shift ; break ;;
+	esac
+done
+
+if [[ "$TICKET" == "" ]] ; then
+	read -p "Ticket Number? " TICKET
+fi
+
+if [[ "$VERSION" == "" ]] ; then
+	read -p "Target Version? " VERSION
+fi
+
 echo ""
 
 
@@ -74,6 +119,16 @@ echo ""
 
 if [ "$CHOICE" = "1" ] ; then
 ###PREP
+
+##Do we need to clean up from a previous upgrade?
+if [[ -e ./prev ]] ; then
+	echo "Please cleanup after previous upgrade!"
+	exit 1
+elif [[ -e ./prev.next ]] ; then
+        echo "Please cleanup after previous upgrade!"
+        exit 1
+fi
+
 
 ## Check for enough space to do the work
 echo "Checking for enough disk space for the upgrade..."
