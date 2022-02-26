@@ -5,8 +5,8 @@
 ###Put ourselves in a screen session
 if [[ $STY = "" ]]; then
 	echo "Running ourself in a screen session."
-	screen -S $(basename $0) -L "$0 $*"
-	mv screenlog.? $(basename $0).log
+	screen -S "$(basename "$0")" -L "$0 $*"
+	mv screenlog.? "$(basename "$0")".log
 	exit
 fi
 
@@ -51,14 +51,14 @@ else
 	echo ""
 	systemctl |grep j2ee
 	echo ""
-	read -p "Service name?" SERVICENAME
+	read -r -p "Service name?" SERVICENAME
 	echo ""
 fi
 
 ## Get other info we will need.
 
 # Define getopt handling
-TEMP=$(getopt -o t:v:h --long ticket:,version:,help -n $(basename "$0") -- "$@")
+TEMP=$(getopt -o t:v:h --long ticket:,version:,help -n "$(basename "$0")" -- "$@")
 eval set -- "$TEMP"
 
 ## getopt cases - only defining variables
@@ -96,11 +96,11 @@ do
 done
 
 if [[ "$TICKET" == "" ]] ; then
-	read -p "Ticket Number? " TICKET
+	read -r -p "Ticket Number? " TICKET
 fi
 
 if [[ "$VERSION" == "" ]] ; then
-	read -p "Target Version? " VERSION
+	read -r -p "Target Version? " VERSION
 fi
 
 echo ""
@@ -113,7 +113,7 @@ echo "2) Run the Sched"
 echo "3) ROLLBACK"
 echo "X) Exit. or any key really."
 echo ""
-read -n 1 -p 'Well? ' CHOICE
+read -r -n 1 -p 'Well? ' CHOICE
 echo ""
 
 
@@ -132,8 +132,8 @@ fi
 
 ## Check for enough space to do the work
 echo "Checking for enough disk space for the upgrade..."
-DATADIRSIZE=$(du -sk data/ "$SHAREDOPTS"|awk {'print $1'})
-FREESPACE=$(df -k . --output=avail|tail -1)
+DATADIRSIZE=$( du -sk data/ "$SHAREDOPTS" | awk '{print $1}' )
+FREESPACE=$( df -k . --output=avail | tail -1 )
 
 if [[ $FREESPACE -lt $(( 2 * $DATADIRSIZE )) ]] ; then
 	echo "Not enough free space, aborting."
@@ -170,7 +170,7 @@ if [[ $APP = confluence ]] ; then
 					echo "1\) Copy over"
 					echo "2\) Run vimdiff"
 					echo ""
-					read -n 1 -p 'Well? ' CHOICE
+					read -r -n 1 -p 'Well? ' CHOICE
 					echo ""
 				if [ "$CHOICE" = "1" ] ; then
 					cp -vi "$FILEPAIR"
@@ -198,7 +198,7 @@ elif [[ $APP = jira ]] ; then
 					echo "1\) Copy over"
 					echo "2\) Run vimdiff"
 					echo ""
-					read -n 1 -p 'Well? ' CHOICE
+					read -r -n 1 -p 'Well? ' CHOICE
 					echo ""
 				if [ "$CHOICE" = "1" ] ; then
 					cp -vi "$FILEPAIR"
@@ -262,7 +262,7 @@ else
 	echo "Database is not local, check at $DATABASECONNECTION"
 	echo "Please run the following there"
 	echo "su - postgres -c \"pg_dump -O $DATABASE | gzip > /var/lib/pgsql/backups/other/$DATABASE-PRE-$TICKET.dmp.gz\""
-	read -p "Press any key to resume ..."
+	read -r -p "Press any key to resume ..."
 fi
 
 ## Start and watch
@@ -293,7 +293,7 @@ if [[ "$DATABASECONNECTION" == *"localhost"* ]]; then
 else
 	echo "Database is not local, check at $DATABASECONNECTION"
 	echo "Please restore database there, will continue after a pause"
-	read -p "Press any key to resume ..."
+	read -r -p "Press any key to resume ..."
 fi
 
 ## Restore files
